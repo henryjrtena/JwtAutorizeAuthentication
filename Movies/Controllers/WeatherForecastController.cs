@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.IdentityModel.Tokens.Jwt;
@@ -12,13 +13,23 @@ namespace Movies.Controllers
     [ApiController]
     public class WeatherForecastController : ControllerBase
     {
+        private IConfiguration _config;
+    
+        public WeatherForecastController(IConfiguration config)
+        {
+            _config = config;
+        }
+
         [AllowAnonymous]
         [HttpPost("GenerateToken", Name = "GenerateToken")]
         public IActionResult GenerateToken()
         {
             try
             {
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("DhftOS5uphK3vmCJQrexST1RsyjZBjXWRgJMFPU4"));
+                var jwtSettingsSection = _config.GetSection("JwtSettings");
+
+
+                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettingsSection.GetValue<string>("Key")));
                 var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
                 var claims = new[]
@@ -27,7 +38,7 @@ namespace Movies.Controllers
                     new Claim(ClaimTypes.Email, "hatena@gmail.com"),
                     new Claim(ClaimTypes.GivenName, "Henry"),
                     new Claim(ClaimTypes.Surname, "Tena"),
-                    new Claim(ClaimTypes.Role, "User")
+                    new Claim(ClaimTypes.Role, "AdminOnly")
                 };
 
                 var token = new JwtSecurityToken(
